@@ -6,11 +6,15 @@ import com.workforcepro.employee.dto.EmployeeRequest;
 import com.workforcepro.employee.dto.EmployeeResponse;
 import com.workforcepro.employee.entity.Employee;
 import com.workforcepro.employee.repository.EmployeeRepository;
+import com.workforcepro.exception.DuplicateResourceException;
+import com.workforcepro.exception.ResourceNotFoundException;
 import com.workforcepro.user.entity.User;
 import com.workforcepro.user.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -31,20 +35,20 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeResponse createEmployee(EmployeeRequest request) {
 
         if (employeeRepository.existsByEmployeeCode(request.getEmployeeCode())) {
-            throw new RuntimeException("Employee code already exists");
+            throw new DuplicateResourceException("Employee code already exists");
         }
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
 
         Employee manager = null;
 
         if (request.getManagerId() != null) {
             manager = employeeRepository.findById(request.getManagerId())
-                    .orElseThrow(() -> new RuntimeException("Manager not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
         }
 
         Employee employee = new Employee();
@@ -65,17 +69,23 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeResponse> getAllEmployees() {
-        return employeeRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<EmployeeResponse> getAllEmployees(int page, int size, String sortBy) {
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(sortBy).ascending()
+        );
+
+        Page<Employee> employees = employeeRepository.findAll(pageable);
+
+        return employees.map(this::mapToResponse);
     }
 
     @Override
     public EmployeeResponse getEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
         return mapToResponse(employee);
     }
@@ -84,16 +94,16 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
 
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
         Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
 
         Employee manager = null;
 
         if (request.getManagerId() != null) {
             manager = employeeRepository.findById(request.getManagerId())
-                    .orElseThrow(() -> new RuntimeException("Manager not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
         }
 
         employee.setFirstName(request.getFirstName());
@@ -114,7 +124,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void deleteEmployee(Long id) {
 
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
         employeeRepository.delete(employee);
     }

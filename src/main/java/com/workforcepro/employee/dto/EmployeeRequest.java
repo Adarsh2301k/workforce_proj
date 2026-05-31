@@ -1,20 +1,39 @@
 package com.workforcepro.employee.dto;
 
 import com.workforcepro.common.enums.EmploymentStatus;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 
 public class EmployeeRequest {
 
+    @NotBlank(message = "Employee code is required")
     private String employeeCode;
+
+    @NotBlank(message = "First name is required")
     private String firstName;
+
+    @NotBlank(message = "Last name is required")
     private String lastName;
+
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone must be 10 digits")
     private String phone;
+
+    @NotBlank(message = "Designation is required")
     private String designation;
+
+    @NotNull(message = "Joining date is required")
     private LocalDate joiningDate;
+
+    @NotNull(message = "Employment status is required")
     private EmploymentStatus employmentStatus;
+
+    @NotNull(message = "User id is required")
     private Long userId;
+
+    @NotNull(message = "Department id is required")
     private Long departmentId;
+
     private Long managerId;
 
     public String getEmployeeCode() {
